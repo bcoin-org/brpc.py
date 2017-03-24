@@ -69,12 +69,20 @@ class TwistedTestCase(TestCase):
         yield self.server.fire('foo', bytearray('message_str'))
         yield x  # ensure the event handler got called
 
+    @inlineCallbacks
+    def test_client_ping(self):
+        #TODO: mock something to ensure it works
+        yield self.client.ping(99)
+
+    @inlineCallbacks
+    def test_server_ping(self):
+        #TODO: mock something to ensure it works
+        yield self.server.ping(99)
 
 
     ##################################################
     @inlineCallbacks
     def setUp(self):
-        print "SETUP"
         port = 9009
         factory = WebSocketServerFactory(u"ws://127.0.0.1:{}".format(port))
         factory.protocol = TestServerProtcol

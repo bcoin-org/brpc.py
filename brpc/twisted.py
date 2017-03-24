@@ -65,6 +65,7 @@ class TwistedBRPCProtocol():
         print " #### Handling[{}]: {}".format(packet.type, packet)
         if packet.type == Packet.types['EVENT']:
             handlers = self.EventHandlers
+            print " EVENT: {}".format(packet.event)
             if hasattr(handlers, '{}'.format(packet.event)):
                 getattr(handlers, '{}'.format(packet.event))(packet.payload)
             elif hasattr(self, 'event_{}'.format(packet.event)):
@@ -107,12 +108,14 @@ class TwistedBRPCProtocol():
             self.sendMessage(packet.frame(), isBinary=True)
         elif packet.type == Packet.types['PING']:
             # send pong
-            ping_pkt = Packet()
-            ping_pkt.type = Packet.types['PING']
-            ping_pkt.payload = nonce
-            self.sendMessage(ping_pkt.frame(), isBinary=True)
+            print " SENDING PONG {}".format(packet.payload)
+            pong_pkt = Packet()
+            pong_pkt.type = Packet.types['PONG']
+            pong_pkt.payload = packet.payload
+            self.sendMessage(pong_pkt.frame(), isBinary=True)
         elif packet.type == Packet.types['PONG']:
             # resolve pong
+            print " RECEIVED PONG {}".format(packet.payload)
             if packet.payload in self.ping_defers:
                 self.ping_defers[packet.payload].callback(True)
             else:

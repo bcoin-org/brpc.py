@@ -5,9 +5,7 @@ from brpc.writer import hexify
 class Reader():
 
     def __init__(self, data):
-        # print " READ TYPE: {}".format(type(data))
-        if data:
-            self.data = bytearray(data)
+        self.data = bytearray(data)
         # self.data = data
         self.offset = 0
 
@@ -46,6 +44,18 @@ class Reader():
         ret = struct.unpack_from('>I', self.data, self.offset)[0]
         # print " readU32[{}]: {}".format(self.offset,ret)
         self.offset += 4
+        return ret
+
+    def readU32BE(self):
+        ret = struct.unpack_from('<I', self.data, self.offset)[0]
+        # print " readU32BE[{}]: {}".format(self.offset,ret)
+        self.offset += 4
+        return ret
+
+    def readU64(self):
+        ret = struct.unpack_from('>Q', self.data, self.offset)[0]
+        # print " readU64[{}]: {}".format(self.offset,ret)
+        self.offset += 8
         return ret
 
     def readVarint(self):

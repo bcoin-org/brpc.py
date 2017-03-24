@@ -56,7 +56,15 @@ class Packet():
         print " FROM RAW CALL:[{}] {}.".format(type, hexify(data))
 
         if type == self.types['EVENT']:
-            pass #TODO:
+            size = self.br.readU8()
+            self.event = self.br.readString('ascii', size)
+            # print " FROM RAW CALL:[{}] {}.".format(size, self.event)
+            print " EVT: {}".format(self.event)
+            # count = br.readU8()
+            size = self.br.readVarint()
+            print " SIZE: {}".format(size)
+            self.payload = self.br.readBytes(size)
+            print " PAYLOAD: {}".format(self.payload)
         elif type == self.types['CALL']:
             size = self.br.readU8()
             self.event = self.br.readString('ascii', size)
@@ -73,11 +81,16 @@ class Packet():
             size = self.br.readVarint()
             self.payload = self.br.readBytes(size)
         elif type == self.types['ERROR']:
-            pass
+            self.id = br.readU32()
+            self.code = self.br.readU8()
+            size = self.br.readU8();
+            #TODO: make payload?
+            self.msg = self.br.readString('acii', size)
+        # elif type in (self.types['PING'], self.types['PONG']):
         elif type == self.types['PING']:
-            pass
+            self.payload = self.br.readBytes(8)
         elif type == self.types['PONG']:
-            pass
+            self.payload = self.br.readU64()
         else:
             raise "Unknown Packet Type"
 
@@ -113,14 +126,16 @@ class Packet():
             size += encoding.sizeVarint(len(self.payload))
             size += len(self.payload)  #TODO:
         #TODO:
-        elif type == self.types['ERROR']:
-            pass
-        elif type == self.types['PING']:
-            pass
-        elif type == self.types['PONG']:
-            pass
+        elif self.type == self.types['ERROR']:
+            size += 4
+            size += 1
+            size += 1
+            size += len(self.msg)
+        elif self.type in (self.types['PING'], self.types['PONG']):
+            size += 8
+        # elif self.type == self.types['PONG']:
         else:
-            raise "Unknown message type."
+            raise Exception("Unknown message type: {}.".format(self.type))
         return size
 
     # to_bytes
@@ -161,9 +176,18 @@ class Packet():
             ####
             bw.writeVarint(len(self.payload))
             bw.writeBytes(self.payload)
-        #TODO:
+        elif self.type == Packet.types['ERROR']:
+            bw.writeU32(self.id)
+            bw.writeU8(self.code)
+            bw.writeU8(len(self.msg))
+            bw.writeString(self.msg, 'ascii')
+        # elif self.type in (Packet.types['PING'], Packet.types['PONG']):
+        elif self.type == Packet.types['PING']:
+            bw.writeU64(self.payload)
+        elif self.type == Packet.types['PONG']:
+            bw.writeBytes(self.payload)
         else:
-            raise "Unknown message type."
+            raise Exception("Unknown message type {}.".format(self.type))
 
         data = bw.render()
         # print " DDDD: {}".format(data)

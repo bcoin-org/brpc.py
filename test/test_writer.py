@@ -4,12 +4,14 @@ from brpc.writer import Writer, hexify
 
 class TestWriter(TestCase):
     def test_writer(self):
-        x = Writer(31)
+        x = Writer(45)
         x.writeU8(0xfa)
         x.writeU8(0xcc)
-        x.writeU16(17)
-        x.writeU16(5)
-        x.writeU16BE(1)
+        x.writeU16(0x1234)
+        x.writeU16BE(0x1234)
+        x.writeU32(0xaaaabbbb)
+        x.writeU32BE(0xccccdddd)
+        x.writeU64(0x0123456789abcdef)
         x.writeVarint(0xfa)
         x.writeVarint(0xff)
         x.writeVarint(0xcccc)
@@ -20,6 +22,6 @@ class TestWriter(TestCase):
         x.writeU8(0xfa)
         # print(" Writer: {}".format(x))
         self.assertEqual(str(x),
-            "facc001100050100fafd00fffdccccfeaaaabbbb636f6f6ce298ba010101fa")
-        self.assertEqual(x.written, 31)
+            "facc12343412aaaabbbbddddcccc0123456789abcdeffafd00fffdccccfeaaaabbbb636f6f6ce298ba010101fa")
+        self.assertEqual(x.written, 45)
         self.assertTrue(x.render())

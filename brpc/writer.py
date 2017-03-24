@@ -21,10 +21,6 @@ class Writer():
      # @returns {Buffer} Rendered buffer.
     def render(self, keep=False):
         assert(self.written == len(self.data));
-        if self.written != len(self.data):
-            # print " FuCKED: {} != {} => {}".format(self.written, len(self.data), hexify(self.data))
-            assert(0)
-        #TODO:
         data = self.data
         if not keep:
             self.destroy()
@@ -83,6 +79,15 @@ class Writer():
         self.written += 4
         assert(struct.calcsize('>I') == 4)
         # print "   writeU32[{}]: {}".format(value, hexify(self.data))
+
+    # Write uint64le.
+    # @param {Number} value * Write uint64le.
+    # @param {Number} value
+    def writeU64(self, value):
+        struct.pack_into('>Q', self.data, self.written, value)
+        self.written += 8
+        assert(struct.calcsize('>Q') == 8)
+        # print "   writeU64[{}]: {}".format(value, hexify(self.data))
 
     # Write uint32be.
     # @param {Number} value * Write uint32be.
