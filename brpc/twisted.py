@@ -25,10 +25,18 @@ from twisted.internet import defer
 #     import trollius as asyncio
 
 class TwistedBRPCProtocol():
-    call_sequence = 0
-    ping_challenge = 0
-    call_defers = {}
-    ping_defers = {}
+    def __init__(self):
+        if issubclass(self.__class__, WebSocketServerProtocol):
+            super(WebSocketServerProtocol, self).__init__()
+        elif issubclass(self.__class__, WebSocketClientProtocol):
+            super(WebSocketClientProtocol, self).__init__()
+        else:
+            raise Exception("Must inherit from WebSocketServerProtocol or WebSocketClientProtocol")
+
+        self.call_sequence = 0
+        self.ping_challenge = 0
+        self.call_defers = {}
+        self.ping_defers = {}
 
     # Should be overloaded by users
     class CallHandlers():
