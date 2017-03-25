@@ -2,8 +2,143 @@ from brpc.reader import Reader
 from brpc.writer import Writer
 from unittest import TestCase
 
-class TestWriter(TestCase):
-    def test_writer(self):
+
+class TestReader(TestCase):
+    def test_int(self):
+        x = Writer(58)
+        x.write8(-0x0c)
+        x.writeU8(0xfa)
+        x.write16(-0x1234)
+        x.write16BE(-0x1234)
+        x.writeU16(0x1234)
+        x.writeU16BE(0x1234)
+        x.write32(-0x0aaabbbb)
+        x.write32BE(-0x0aaabbbb)
+        x.writeU32(0xccccdddd)
+        x.writeU32BE(0xccccdddd)
+        x.write64(-0x0123456789abcdef)
+        x.write64BE(-0x0123456789abcdef)
+        x.writeU64(0x0123456789abcdef)
+        x.writeU64BE(0x0123456789abcdef)
+
+        self.assertEqual(x.written, 58)
+        self.assertEqual(str(x),
+            "f4faccededcc34121234454455f5f5554445ddddccccccccdddd1132547698badcfefedcba9876543211efcdab89674523010123456789abcdef")
+        y = Reader(x.render())
+        self.assertEqual(y.offset, 0)
+        self.assertEqual(y.read8(), -0x0c)
+        self.assertEqual(y.readU8(), 0xfa)
+        self.assertEqual(y.read16(), -0x1234)
+        self.assertEqual(y.read16BE(), -0x1234)
+        self.assertEqual(y.readU16(), 0x1234)
+        self.assertEqual(y.readU16BE(), 0x1234)
+        self.assertEqual(y.read32(), -0x0aaabbbb)
+        self.assertEqual(y.read32BE(), -0x0aaabbbb)
+        self.assertEqual(y.readU32(), 0xccccdddd)
+        self.assertEqual(y.readU32BE(), 0xccccdddd)
+        self.assertEqual(y.read64(), -0x0123456789abcdef)
+        self.assertEqual(y.read64BE(), -0x0123456789abcdef)
+        self.assertEqual(y.readU64(), 0x0123456789abcdef)
+        self.assertEqual(y.readU64BE(), 0x0123456789abcdef)
+        self.assertEqual(y.offset, 58)
+
+    def test_varint(self):
+        x = Writer(12)
+        x.writeVarint(0xfa)
+        x.writeVarint(0xff)
+        x.writeVarint(0xcccc)
+        x.writeVarint(0xaaaabbbb)
+        self.assertEqual(x.written, 12)
+        self.assertEqual(str(x),
+            "fafdff00fdccccfebbbbaaaa")
+        y = Reader(x.render())
+        self.assertEqual(y.readVarint(), 0xfa)
+        self.assertEqual(y.readVarint(), 0xff)
+        self.assertEqual(y.readVarint(), 0xcccc)
+        self.assertEqual(y.readVarint(), 0xaaaabbbb)
+        self.assertEqual(y.offset, 12)
+
+    def test_skipVarint(self):
+        x = Writer(12)
+        x.writeVarint(0xfa)
+        x.writeVarint(0xff)
+        x.writeVarint(0xcccc)
+        x.writeVarint(0xaaaabbbb)
+        self.assertEqual(x.written, 12)
+        self.assertEqual(str(x),
+            "fafdff00fdccccfebbbbaaaa")
+        y = Reader(x.render())
+        for e in [1, 4, 7, 12]:
+            y.skipVarint()
+            self.assertEqual(y.offset, e)
+
+    def test_float(self):
+        x = Writer(12)
+        x.writeFloat(0xcafebabe)
+        x.writeFloatBE(0xcafebabe)
+        x.writeFloat(1.0/3.0)
+        self.assertEqual(x.written, 12)
+        self.assertEqual(str(x), 'bbfe4a4f''4f4afebb''abaaaa3e')
+
+    def test_double(self):
+        x = Writer(24)
+        x.writeDouble(0xdeadbeefcafebabe)
+        x.writeDoubleBE(0xdeadbeefcafebabe)
+        x.writeDouble(1.0/3.0)
+        self.assertEqual(str(x), 'd75ff9ddb7d5eb43'
+                                 '43ebd5b7ddf95fd7'
+                                 '555555555555d53f')
+        y = Reader(x.render())
+        self.assertEqual(y.offset, 0)
+        self.assertEqual(y.readDouble(), float(0xdeadbeefcafebabe))
+        self.assertEqual(y.readDoubleBE(), float(0xdeadbeefcafebabe))
+        self.assertEqual(y.readDouble(), 1.0/3.0)
+        self.assertEqual(y.offset, 24)
+
+    def test_string(self):
+        x = Writer(22)
+        x.writeString("cool", 'ascii')
+        x.writeString(u"\u263a", 'utf-8')
+        x.writeVarString("cool", 'ascii')
+        x.writeVarString(u"\u263a"*3, 'utf-8')
+        self.assertEqual(x.written, 22)
+        self.assertEqual(str(x), '636f6f6c'
+                                 'e298ba'
+                                 '04636f6f6c'
+                                 '09e298bae298bae298ba')
+        y = Reader(x.render())
+        self.assertEqual(y.offset, 0)
+        self.assertEqual(y.readString('ascii', 4), "cool")
+        self.assertEqual(y.readString('utf-8', 3), u'\u263a')
+        self.assertEqual(y.readVarString('ascii'), 'cool')
+        self.assertEqual(y.readVarString('utf-8'), u'\u263a'*3)
+        self.assertEqual(y.offset, 22)
+
+    def test_bytes(self):
+        x = Writer(420)
+        x.writeBytes('\xfa')
+        x.writeVarBytes('\xca''\xfe''\xba''\xbe')
+        x.writeVarBytes('\x01'*0x19b)
+        self.assertEqual(x.written, 420)
+        self.assertEqual(str(x), 'fa04cafebabefd9b01' + '01'*0x19b)
+        y = Reader(x.render())
+        self.assertEqual(y.offset, 0)
+        self.assertEqual(y.readBytes(1), '\xfa')
+        self.assertEqual(y.readVarBytes(), '\xca''\xfe''\xba''\xbe')
+        self.assertEqual(y.readVarBytes(), '\x01'*0x19b)
+        self.assertEqual(y.offset, 420)
+
+    def test_unpack(self):
+        x = Writer(6)
+        x.pack('>hI', 0x0c, 0xafebabe0)
+        self.assertEqual(x.written, 6)
+        self.assertEqual(str(x), '000cafebabe0')
+        y = Reader(x.render())
+        self.assertEqual(y.offset, 0)
+        self.assertEqual(y.unpack('>hI'), (0x0c, 0xafebabe0))
+        self.assertEqual(y.offset, 6)
+
+    def test_combined(self):
         x = Writer(45)
         x.writeU8(0xfa)
         x.writeU8(0xcc)
@@ -22,22 +157,8 @@ class TestWriter(TestCase):
         x.writeU8(0xfa)
         # print(" Writer: {}".format(x))
         self.assertEqual(str(x),
-            "facc12343412aaaabbbbddddcccc0123456789abcdeffafd00fffdccccfeaaaabbbb636f6f6ce298ba010101fa")
+            "facc34121234bbbbaaaaccccddddefcdab8967452301fafdff00fdccccfebbbbaaaa636f6f6ce298ba010101fa")
         y = Reader(x.render())
-        # print "1: {}".format(y.readU8())
-        # print "2: {}".format(y.readU8())
-        # print "3: {}".format(y.readU16())
-        # print "4: {}".format(y.readU16())
-        # print "5: {}".format(y.readU16BE())
-        # print "6: {}".format(y.readVarint())
-        # print "7: {}".format(y.readVarint())
-        # print "8: {}".format(y.readVarint())
-        # print "9: {}".format(y.readVarint())
-        # print u"10: {}".format(y.readString('ascii', 4))
-        # print u"11: {}".format(y.readString('utf-8', 3))
-        # print u"12: {}".format(y.readBytes(3))
-        # print u"13: {}".format(y.readU8())
-        # y.seek(-y.offset)
         self.assertEqual(y.offset, 0)
         self.assertEqual(y.readU8(), 0xfa)
         self.assertEqual(y.readU8(), 0xcc)

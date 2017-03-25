@@ -2,7 +2,34 @@ import struct
 from unittest import TestCase
 from brpc.writer import Writer, hexify
 
+
+#NOTE: more tests in test_reader
 class TestWriter(TestCase):
+    def test_float(self):
+        x = Writer(12)
+        x.writeFloat(0xcafebabe)
+        x.writeFloatBE(0xcafebabe)
+        x.writeFloat(1.0/3.0)
+        self.assertEqual(x.written, 12)
+        self.assertEqual(str(x), 'bbfe4a4f''4f4afebb''abaaaa3e')
+
+    def test_double(self):
+        x = Writer(24)
+        x.writeDouble(0xdeadbeefcafebabe)
+        x.writeDoubleBE(0xdeadbeefcafebabe)
+        x.writeDouble(1.0/3.0)
+        self.assertEqual(str(x), 'd75ff9ddb7d5eb43'
+                                 '43ebd5b7ddf95fd7'
+                                 '555555555555d53f')
+
+    def test_copy(self):
+        pass
+
+
+
+    def test_fill(self):
+        pass
+
     def test_writer(self):
         x = Writer(45)
         x.writeU8(0xfa)
@@ -22,6 +49,6 @@ class TestWriter(TestCase):
         x.writeU8(0xfa)
         # print(" Writer: {}".format(x))
         self.assertEqual(str(x),
-            "facc12343412aaaabbbbddddcccc0123456789abcdeffafd00fffdccccfeaaaabbbb636f6f6ce298ba010101fa")
+            "facc34121234bbbbaaaaccccddddefcdab8967452301fafdff00fdccccfebbbbaaaa636f6f6ce298ba010101fa")
         self.assertEqual(x.written, 45)
         self.assertTrue(x.render())

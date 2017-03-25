@@ -111,6 +111,6 @@ class TwistedTestCase(TestCase):
         yield self.crdy  # wait until ready
 
     def tearDown(self):
-        self.listening_port.stopListening()
         self.client.sendClose()
+        self.listening_port.stopListening()
         return self.done
